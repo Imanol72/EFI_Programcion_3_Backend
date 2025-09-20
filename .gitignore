@@ -1,0 +1,27 @@
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.*
+
+# Build outputs
+dist/
+build/
+
+# Sequelize files (si generás migraciones o seeders compiladas, opcional)
+*.sqlite
+*.sqlite3
+
+# VSCode
+.vscode/
+
+# MacOS
+.DS_Store
