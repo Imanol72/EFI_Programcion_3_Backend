@@ -16,4 +16,7 @@ app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 
+const userRoutes = require("./routes/users.routes");
+
 app.use("/auth", authRoutes);
+app.use("/users", userRoutes);

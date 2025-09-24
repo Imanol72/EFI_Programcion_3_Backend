@@ -1,10 +1,16 @@
 // backend/models/index.js
-// backend/models/index.js
-const { Sequelize } = require("sequelize");
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+const Sequelize = require("sequelize");
 const dotenv = require("dotenv");
+
 dotenv.config();
 
-// Inicializar conexión
+const basename = path.basename(__filename);
+const db = {};
+
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -16,31 +22,32 @@ const sequelize = new Sequelize(
   }
 );
 
-// Importar modelos
-const User = require("./users")(sequelize, Sequelize.DataTypes);
-const Room = require("./room")(sequelize, Sequelize.DataTypes);
-const Client = require("./client")(sequelize, Sequelize.DataTypes);
-const Reservation = require("./reservation")(sequelize, Sequelize.DataTypes);
-
-// Agrupar modelos (en singular)
-const db = { User, Room, Client, Reservation };
+// Cargar todos los modelos automáticamente
+fs.readdirSync(__dirname)
+  .filter((file) => {
+    return (
+      file.indexOf(".") !== 0 &&
+      file !== basename &&
+      file.slice(-3) === ".js"
+    );
+  })
+  .forEach((file) => {
+    const model = require(path.join(__dirname, file))(
+      sequelize,
+      Sequelize.DataTypes
+    );
+    db[model.name] = model;
+  });
 
 // Ejecutar asociaciones
-Object.values(db).forEach(model => {
-  if (model.associate) {
-    model.associate(db);
+Object.keys(db).forEach((modelName) => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
   }
 });
-
-// Debug
-console.log("Modelos cargados:", Object.keys(db));
-
-// Sincronizar modelos
-sequelize.sync()
-  .then(() => console.log("✅ Modelos sincronizados con la base de datos"))
-  .catch(err => console.error("❌ Error al sincronizar modelos:", err));
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
 module.exports = db;
+
