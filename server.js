@@ -11,9 +11,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Rutas
+
+// Rutas de autenticación
 const authRoutes = require("./routes/auth.routes");
 app.use("/api/auth", authRoutes);
+
+// Rutas de usuarios
+const usersRoutes = require("./routes/users.routes");
+app.use("/api/users", usersRoutes);
 
 // Sincronizar base de datos
 db.sequelize.sync()

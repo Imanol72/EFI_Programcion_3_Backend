@@ -1,22 +1,22 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { Users } = require("../models");
+const { User } = require("../models");
 
 const SECRET_KEY = process.env.JWT_SECRET || "mi_secreto_super_seguro";
 
 // LOGIN
 const login = async (req, res) => {
-  const { correo, contraseña } = req.body;
+  const { mail, password } = req.body;
 
   try {
-    const user = await Users.findOne({ where: { correo } });
+    const user = await User.findOne({ where: { mail } });
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
-    const isMatch = await bcrypt.compare(contraseña, user.contraseña);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Contraseña incorrecta" });
 
     const token = jwt.sign(
-      { id: user.id, rol: user.rol },
+      { id: user.id, role: user.role },
       SECRET_KEY,
       { expiresIn: "2h" }
     );
@@ -26,9 +26,10 @@ const login = async (req, res) => {
       token,
       user: {
         id: user.id,
-        nombre: user.nombre,
-        correo: user.correo,
-        rol: user.rol
+        nombre: user.username,
+        correo: user.mail,
+        rol: user.role,
+        estado: user.status
       }
     });
   } catch (error) {
@@ -39,19 +40,19 @@ const login = async (req, res) => {
 
 // REGISTER
 const register = async (req, res) => {
-  const { nombre, correo, contraseña, rol } = req.body;
+  const { username, mail, password, role } = req.body;
 
   try {
-    const existingUser = await Users.findOne({ where: { correo } });
+    const existingUser = await User.findOne({ where: { correo } });
     if (existingUser) return res.status(400).json({ message: "Correo ya registrado" });
 
     const hashedPassword = await bcrypt.hash(contraseña, 10);
 
-    const newUser = await Users.create({
+    const newUser = await User.create({
       nombre,
       correo,
       contraseña: hashedPassword,
-      rol: rol || "cliente" // default
+      role: role || "cliente" // default
     });
 
     res.status(201).json({
