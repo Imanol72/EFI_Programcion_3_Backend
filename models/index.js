@@ -1,15 +1,22 @@
 // backend/models/index.js
 "use strict";
-
+const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const Sequelize = require("sequelize");
 const dotenv = require("dotenv");
+const cors = require("cors");
 
 dotenv.config();
 
+const app = express();
 const basename = path.basename(__filename);
 const db = {};
+
+
+// Middlewares
+app.use(cors()); // ✅ habilita CORS para todos los orígenes en desarrollo
+app.use(express.json());
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
