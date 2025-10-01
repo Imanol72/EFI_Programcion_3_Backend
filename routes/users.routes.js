@@ -21,17 +21,25 @@ router.get("/", async (req, res) => {
 });
 
 // 📌 Obtener un usuario por ID
-router.get("/:id", async (req, res) => {
+// GET /api/users/profile  -> perfil del usuario autenticado
+router.get("/:id",'/profile', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id, {
-      attributes: ["id", "username", "mail", "role", "is_active", "created_at", "updated_at"],
-    });
 
+    // req.user viene del authMiddleware (payload del token)
+    const userId = req.user?.id;
+    if (!userId) return res.status(400).json({ message: 'Usuario no identificado en token' });
+
+    const user = await db.User.findByPk(userId, {
+      attributes: ['id', 'nombre', 'correo', 'rol', 'is_active', 'createdAt']
+    });
+    
     if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
 
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    
+    res.json({ status: 200, data: user });
+  } catch (err) {
+    console.error('Error /profile:', err);
+    res.status(500).json({ message: 'Error del servidor' });
   }
 });
 
