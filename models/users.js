@@ -17,10 +17,10 @@ module.exports = (sequelize, DataTypes) => {
 
   User.init(
     {
-      username: { type: DataTypes.STRING, allowNull: false },
-      password: { type: DataTypes.STRING, allowNull: false },
-      mail: { type: DataTypes.STRING, allowNull: false, unique: true },
-      role: { type: DataTypes.STRING, allowNull: false, defaultValue: "user" },
+      nombre: DataTypes.STRING,
+      correo: { type: DataTypes.STRING, unique: true, allowNull: false },
+      contraseña: DataTypes.STRING,
+      rol: DataTypes.ENUM("admin", "empleado", "cliente"),
       status: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     },
     { 
