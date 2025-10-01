@@ -20,6 +20,14 @@ app.use("/api/auth", authRoutes);
 const usersRoutes = require("./routes/users.routes");
 app.use("/api/users", usersRoutes);
 
+// Rutas de habitaciones
+const roomsRoutes = require("./routes/rooms.routes");
+app.use("/api/rooms", roomsRoutes);
+
+// Rutas de reservas
+const reservationsRoutes = require("./routes/reservations.routes");
+app.use("/api/reservations", reservationsRoutes);
+
 // Sincronizar base de datos
 db.sequelize.sync()
   .then(() => console.log("✅ Base de datos sincronizada"))
