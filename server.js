@@ -24,6 +24,11 @@ app.use("/api/users", usersRoutes);
 const roomsRoutes = require("./routes/rooms.routes");
 app.use("/api/rooms", roomsRoutes);
 
+// Rutas de clientes
+const clientsRoutes = require("./routes/clients.routes");
+app.use("/api/clients", clientsRoutes);
+
+
 // Rutas de reservas
 const reservationsRoutes = require("./routes/reservations.routes");
 app.use("/api/reservations", reservationsRoutes);
@@ -38,3 +43,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
+

@@ -2,17 +2,14 @@
 const express = require("express");
 const router = express.Router();
 const authMiddleware = require('../middlewares/authMiddleware');
-const db = require('../models');
 const bcrypt = require("bcryptjs");
-const { User } = require("../models"); // Importa desde index.js de models
+const { User } = require("../models");
 
-
-
-// 📌 Obtener todos los usuarios
+// 📌 Get all users
 router.get("/", async (req, res) => {
   try {
     const users = await User.findAll({
-      attributes: ["id", "username", "mail", "role", "is_active", "created_at", "updated_at"],
+      attributes: ["id", "username", "email", "role", "is_active", "created_at", "updated_at"],
     });
     res.json(users);
   } catch (error) {
@@ -20,11 +17,11 @@ router.get("/", async (req, res) => {
   }
 });
 
-// 📌 Obtener un usuario por ID
+// 📌 Get user by ID
 router.get("/:id", async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
-      attributes: ["id", "username", "mail", "role", "is_active", "created_at", "updated_at"],
+      attributes: ["id", "username", "email", "role", "is_active", "created_at", "updated_at"],
     });
 
     if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
@@ -35,31 +32,46 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// 📌 Crear un nuevo usuario
+// 📌 Create new user
 router.post("/", async (req, res) => {
   try {
-    const { username, mail, password, role } = req.body;
-    const existing = await User.findOne({ where: { mail } });
-    if (existing) return res.status(400).json({ error: "Correo ya registrado" });
-    const hash = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ username, mail, password: hash, role: role || "cliente" });
-    res.status(201).json({ id: newUser.id, username: newUser.username, mail: newUser.mail, role: newUser.role });
+    const { username, email, password, role } = req.body;
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) return res.status(400).json({ error: "Correo ya registrado" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({ 
+      username, 
+      email, 
+      password: hashedPassword, 
+      role: role || "cliente" 
+    });
+
+    res.status(201).json({ 
+      id: newUser.id, 
+      username: newUser.username, 
+      email: newUser.email, 
+      role: newUser.role 
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Actualizar usuario
+// 📌 Update user
 router.put("/:id", async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
-    const { username, mail, password, role, is_active } = req.body;
+
+    const { username, email, password, role, is_active } = req.body;
+
     if (password) user.password = await bcrypt.hash(password, 10);
     if (username) user.username = username;
-    if (mail) user.mail = mail;
+    if (email) user.email = email;
     if (role) user.role = role;
     if (typeof is_active !== "undefined") user.is_active = is_active;
+
     await user.save();
     res.json({ message: "Usuario actualizado" });
   } catch (error) {
@@ -67,7 +79,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// 📌 Eliminar un usuario
+// 📌 Delete user
 router.delete("/:id", async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
