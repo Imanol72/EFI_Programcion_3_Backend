@@ -1,9 +1,12 @@
 // routes/users.routes.js
 const express = require("express");
+const router = express.Router();
+const authMiddleware = require('../middlewares/authMiddleware');
+const db = require('../models');
 const bcrypt = require("bcryptjs");
 const { User } = require("../models"); // Importa desde index.js de models
 
-const router = express.Router();
+
 
 // 📌 Obtener todos los usuarios
 router.get("/", async (req, res) => {
