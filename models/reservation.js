@@ -1,42 +1,34 @@
 "use strict";
-const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class Reservation extends Model {
-    static associate(models) {
-      // Relación con Client
-      Reservation.belongsTo(models.Client, { 
-        foreignKey: "id_cliente", 
-        as: "cliente" 
-      });
-
-      // Relación con Room
-      Reservation.belongsTo(models.Room, { 
-        foreignKey: "id_habitacion", 
-        as: "habitacion" 
-      });
-
-      // Relación con User (quien registró la reserva)
-      Reservation.belongsTo(models.User, { 
-        foreignKey: "id_usuario", 
-        as: "usuario" 
-      });
-    }
-  }
-
-  Reservation.init(
+  const Reservation = sequelize.define(
+    "Reservation",
     {
+      id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
       fecha_inicio: { type: DataTypes.DATE, allowNull: false },
       fecha_fin: { type: DataTypes.DATE, allowNull: false },
-      estado: { type: DataTypes.STRING, defaultValue: "pendiente" }
+      estado: { type: DataTypes.STRING, allowNull: true }, // default en DB: 'pendiente'
+      id_cliente: { type: DataTypes.INTEGER, allowNull: true },
+      id_habitacion: { type: DataTypes.INTEGER, allowNull: true },
+      id_usuario: { type: DataTypes.INTEGER, allowNull: true },
     },
-    { 
-      sequelize, 
-      modelName: "Reservation", 
-      tableName: "reservations", 
-      underscored: true 
+    {
+      tableName: "reservations",
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+      underscored: true,
     }
   );
+
+  Reservation.associate = (models) => {
+    // reservations (N) --- (1) clients
+    Reservation.belongsTo(models.Client, { foreignKey: "id_cliente", as: "cliente" });
+    // reservations (N) --- (1) users
+    Reservation.belongsTo(models.User, { foreignKey: "id_usuario", as: "usuario" });
+    // reservations (N) --- (1) rooms
+    Reservation.belongsTo(models.Room, { foreignKey: "id_habitacion", as: "habitacion" });
+  };
 
   return Reservation;
 };

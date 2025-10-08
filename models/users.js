@@ -1,36 +1,28 @@
 "use strict";
-const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class User extends Model {
-    static associate(models) {
-      // Relación con Client
-      if (models.Client) {
-        User.hasOne(models.Client, { foreignKey: "id_usuario", as: "cliente" });
-      }
-      // Relación con Reservation
-      if (models.Reservation) {
-        User.hasMany(models.Reservation, { foreignKey: "id_usuario", as: "reservas" });
-      }
-    }
-  }
-
-  User.init(
+  const User = sequelize.define(
+    "User",
     {
-      nombre: DataTypes.STRING,
-      correo: { type: DataTypes.STRING, unique: true, allowNull: false },
-      contraseña: DataTypes.STRING,
-      rol: DataTypes.ENUM("admin", "empleado", "cliente"),
-      status: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+      id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+      username: { type: DataTypes.STRING, allowNull: false },
+      password: { type: DataTypes.STRING, allowNull: false },
     },
-    { 
-      sequelize, 
-      modelName: "User", 
-      tableName: "users", 
-      underscored: true 
+    {
+      tableName: "users",
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+      underscored: true,
     }
   );
 
+  User.associate = (models) => {
+    // users (1) --- (N) clients
+    User.hasMany(models.Client, { foreignKey: "id_usuario", as: "clientes" });
+    // users (1) --- (N) reservations
+    User.hasMany(models.Reservation, { foreignKey: "id_usuario", as: "reservas" });
+  };
+
   return User;
 };
-

@@ -7,40 +7,39 @@ dotenv.config();
 
 const app = express();
 
-// Middlewares
-app.use(cors());
+// CORS ANTES de las rutas
+const FRONT_URL = process.env.CORS_ORIGIN || "http://localhost:5173";
+const corsOpts = {
+  origin: FRONT_URL,                // NO uses '*'
+  credentials: true,                // o false si no usás cookies
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"],
+};
+
+app.use(cors(corsOpts));
+// ❌ NO pongas app.options("*", ...) en Express 5
+
 app.use(express.json());
 
+// Rutas
+app.use("/api/auth", require("./routes/auth.routes"));
+app.use("/api/users", require("./routes/users.routes"));
+app.use("/api/rooms", require("./routes/rooms.routes"));
+app.use("/api/clients", require("./routes/clients.routes"));
+app.use("/api/reservations", require("./routes/reservations.routes"));
 
-// Rutas de autenticación
-const authRoutes = require("./routes/auth.routes");
-app.use("/api/auth", authRoutes);
-
-// Rutas de usuarios
-const usersRoutes = require("./routes/users.routes");
-app.use("/api/users", usersRoutes);
-
-// Rutas de habitaciones
-const roomsRoutes = require("./routes/rooms.routes");
-app.use("/api/rooms", roomsRoutes);
-
-// Rutas de clientes
-const clientsRoutes = require("./routes/clients.routes");
-app.use("/api/clients", clientsRoutes);
-
-
-// Rutas de reservas
-const reservationsRoutes = require("./routes/reservations.routes");
-app.use("/api/reservations", reservationsRoutes);
-
-// Sincronizar base de datos
+// Sync + listen
 db.sequelize.sync()
   .then(() => console.log("✅ Base de datos sincronizada"))
-  .catch((err) => console.error("❌ Error al sincronizar DB:", err));
+  .catch(err => console.error("❌ Error al sincronizar DB:", err));
 
-// Levantar servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+
+// Handler de errores global (después de app.use de rutas)
+app.use((err, req, res, next) => {
+  console.error("🔥 Uncaught error:", err);
+  res.status(500).json({ message: err?.message || "Internal Server Error" });
 });
 
+
+app.listen(PORT, () => console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`));

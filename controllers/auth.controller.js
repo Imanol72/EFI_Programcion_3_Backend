@@ -1,73 +1,40 @@
+const { User } = require("../models");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { User } = require("../models");
-
-const SECRET_KEY = process.env.JWT_SECRET || "mi_secreto_super_seguro";
-
-// LOGIN
-const login = async (req, res) => {
-  const { mail, password } = req.body;
-
-  try {
-    const user = await User.findOne({ where: { mail } });
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: "Contraseña incorrecta" });
-
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      SECRET_KEY,
-      { expiresIn: "2h" }
-    );
-
-    res.status(200).json({
-      message: "Inicio de sesión exitoso",
-      token,
-      user: {
-        id: user.id,
-        nombre: user.username,
-        correo: user.mail,
-        rol: user.role,
-        estado: user.status
-      }
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error del servidor" });
-  }
-};
 
 // REGISTER
-const register = async (req, res) => {
-  const { username, mail, password, role } = req.body;
-
+exports.register = async (req, res, next) => {
   try {
-    const existingUser = await User.findOne({ where: { correo } });
-    if (existingUser) return res.status(400).json({ message: "Correo ya registrado" });
+    const { username, password } = req.body;  // <- el front debe enviar esto
+    if (!username || !password) return res.status(400).json({ message: "Missing fields" });
 
-    const hashedPassword = await bcrypt.hash(contraseña, 10);
+    const exists = await User.findOne({ where: { username } });
+    if (exists) return res.status(409).json({ message: "Username already taken" });
 
-    const newUser = await User.create({
-      nombre,
-      correo,
-      contraseña: hashedPassword,
-      role: role || "cliente" // default
-    });
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, password: hash });
 
-    res.status(201).json({
-      message: "Usuario registrado exitosamente",
-      user: {
-        id: newUser.id,
-        nombre: newUser.nombre,
-        correo: newUser.correo,
-        rol: newUser.rol
-      }
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error del servidor" });
-  }
+    // si no tenés rol en DB, podés no pasarlo o setear 'user' fijo
+    const payload = { id: user.id, username: user.username /*, rol: 'user'*/ };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    res.status(201).json({ user: { id: user.id, username: user.username }, token });
+  } catch (err) { next(err); }
 };
 
-module.exports = { login, register };
+// LOGIN
+exports.login = async (req, res, next) => {
+  try {
+    const { username, password } = req.body;  // <- el front debe enviar esto
+    const user = await User.findOne({ where: { username } });
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.status(401).json({ message: "Invalid credentials" });
+
+    const payload = { id: user.id, username: user.username /*, rol: 'user'*/ };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    res.json({ user: { id: user.id, username: user.username }, token });
+  } catch (err) { next(err); }
+};
