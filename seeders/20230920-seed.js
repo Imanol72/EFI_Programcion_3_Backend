@@ -11,8 +11,8 @@ module.exports = {
         contraseña: passwordHash,
         rol: "admin",
         is_active: true,
-        created_at: new Date(),
-        updated_at: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date()
       },
       {
         nombre: "Empleado",
@@ -20,8 +20,8 @@ module.exports = {
         contraseña: passwordHash,
         rol: "empleado",
         is_active: true,
-        created_at: new Date(),
-        updated_at: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date()
       },
       {
         nombre: "Cliente",
@@ -29,8 +29,8 @@ module.exports = {
         contraseña: passwordHash,
         rol: "cliente",
         is_active: true,
-        created_at: new Date(),
-        updated_at: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ]);
   },

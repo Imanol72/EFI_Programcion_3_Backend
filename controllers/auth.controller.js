@@ -3,38 +3,57 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 // REGISTER
-exports.register = async (req, res, next) => {
+const register = async (req, res, next) => {
   try {
-    const { username, password } = req.body;  // <- el front debe enviar esto
-    if (!username || !password) return res.status(400).json({ message: "Missing fields" });
+    const { nombre, correo, contraseña, rol } = req.body;
 
-    const exists = await User.findOne({ where: { username } });
-    if (exists) return res.status(409).json({ message: "Username already taken" });
+    if (!nombre || !correo || !contraseña) {
+      return res.status(400).json({ message: "Todos los campos obligatorios: nombre, correo, contraseña" });
+    }
 
-    const hash = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, password: hash });
+    const exists = await User.findOne({ where: { correo } });
+    if (exists) return res.status(409).json({ message: "Correo ya registrado" });
 
-    // si no tenés rol en DB, podés no pasarlo o setear 'user' fijo
-    const payload = { id: user.id, username: user.username /*, rol: 'user'*/ };
+    const hash = await bcrypt.hash(contraseña, 10);
+
+    // Si no envían rol, por defecto 'cliente'
+    const user = await User.create({ 
+      nombre, 
+      correo, 
+      contraseña: hash, 
+      rol: rol || "cliente" 
+    });
+
+    const payload = { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    res.status(201).json({ user: { id: user.id, username: user.username }, token });
-  } catch (err) { next(err); }
+    res.status(201).json({ user: payload, token });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // LOGIN
-exports.login = async (req, res, next) => {
+const login = async (req, res, next) => {
   try {
-    const { username, password } = req.body;  // <- el front debe enviar esto
-    const user = await User.findOne({ where: { username } });
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    const { correo, contraseña } = req.body;
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(401).json({ message: "Invalid credentials" });
+    if (!correo || !contraseña) return res.status(400).json({ message: "Faltan campos" });
 
-    const payload = { id: user.id, username: user.username /*, rol: 'user'*/ };
+    const user = await User.findOne({ where: { correo } });
+    if (!user) return res.status(401).json({ message: "Credenciales inválidas" });
+
+    const ok = await bcrypt.compare(contraseña, user.contraseña);
+    if (!ok) return res.status(401).json({ message: "Credenciales inválidas" });
+
+    const payload = { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    res.json({ user: { id: user.id, username: user.username }, token });
-  } catch (err) { next(err); }
+    res.json({ user: payload, token });
+  } catch (err) {
+    next(err);
+  }
 };
+
+
+module.exports = { register, login };

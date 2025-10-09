@@ -5,14 +5,16 @@ import UsersModel from "./users.model.js";
 import RoomsModel from "./rooms.model.js";
 
 dotenv.config();
-
+  console.log(process.env.username);
+  
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
+  process.env.DATABASE,
+  process.env.USERNAME,
+  process.env.PASSWORD,
   {
-    host: process.env.DB_HOST,
+    host: process.env.HOST,
     dialect: "mysql",
+    port: 3306,
     logging: false,
   }
 );
