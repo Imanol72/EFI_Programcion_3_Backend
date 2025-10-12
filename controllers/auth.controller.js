@@ -1,59 +1,85 @@
 const { User } = require("../models");
-const bcrypt = require("bcrypt");
+const { Op } = require("sequelize");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// REGISTER
+// REGISTER: acepta { username, password } y opcional { role / rol }
 const register = async (req, res, next) => {
   try {
-    const { nombre, correo, contraseña, rol } = req.body;
+    const username = req.body?.username ?? req.body?.nombre ?? req.body?.correo;
+    const rawPass  = req.body?.password ?? req.body?.contraseña;
+    const roleIn   = req.body?.role ?? req.body?.rol ?? "cliente";
 
-    if (!nombre || !correo || !contraseña) {
-      return res.status(400).json({ message: "Todos los campos obligatorios: nombre, correo, contraseña" });
+    if (!username || !rawPass) {
+      return res.status(400).json({ message: "Faltan campos: username y password" });
     }
 
-    const exists = await User.findOne({ where: { correo } });
-    if (exists) return res.status(409).json({ message: "Correo ya registrado" });
+    const exists = await User.findOne({ where: { username } });
+    if (exists) return res.status(409).json({ message: "Usuario ya registrado" });
 
-    const hash = await bcrypt.hash(contraseña, 10);
+    const hash = await bcrypt.hash(rawPass, 10);
 
-    // Si no envían rol, por defecto 'cliente'
-    const user = await User.create({ 
-      nombre, 
-      correo, 
-      contraseña: hash, 
-      rol: rol || "cliente" 
+    const user = await User.create({
+      username,
+      password: hash,     // guardamos en 'password' (vieja). Si querés usar 'contraseña', cambiá acá y en el modelo.
+      role: roleIn,
     });
 
-    const payload = { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol };
+    const payload = { id: user.id, username: user.username, role: user.role };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    res.status(201).json({ user: payload, token });
+    return res.status(201).json({ user: payload, token });
   } catch (err) {
     next(err);
   }
 };
 
-// LOGIN
+// LOGIN (tu versión robusta)
 const login = async (req, res, next) => {
   try {
-    const { correo, contraseña } = req.body;
+    console.log("[AUTH] req.body =", req.body);
 
-    if (!correo || !contraseña) return res.status(400).json({ message: "Faltan campos" });
+    const identifier = req.body?.username ?? req.body?.correo ?? req.body?.email;
+    const password   = req.body?.password ?? req.body?.contraseña;
 
-    const user = await User.findOne({ where: { correo } });
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "Faltan campos: username/email y password" });
+    }
+
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [{ username: identifier }, { correo: identifier }],
+      },
+      attributes: [
+        "id","username","nombre","correo",
+        "password","contraseña",
+        "role","rol","is_active"
+      ],
+    });
+
     if (!user) return res.status(401).json({ message: "Credenciales inválidas" });
 
-    const ok = await bcrypt.compare(contraseña, user.contraseña);
+    const storedHash = user.contraseña || user.password;
+    console.log("[AUTH] usando hash de:", user.contraseña ? "contraseña" : "password");
+    if (!storedHash) {
+      console.log("[AUTH] No hay hash en DB para el usuario");
+      return res.status(401).json({ message: "Credenciales inválidas" });
+    }
+
+    const ok = await bcrypt.compare(password, storedHash);
+    console.log("[AUTH] bcrypt.compare =", ok);
     if (!ok) return res.status(401).json({ message: "Credenciales inválidas" });
 
-    const payload = { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol };
+    const safeRole = user.rol || user.role || "cliente";
+    const safeName = user.username || user.nombre || user.correo || "user";
+
+    const payload = { id: user.id, username: safeName, role: safeRole };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    res.json({ user: payload, token });
+    return res.json({ user: payload, token });
   } catch (err) {
     next(err);
   }
 };
 
-
-module.exports = { register, login };
+module.exports = { register, login }; // 👈 ahora sí exportás ambos

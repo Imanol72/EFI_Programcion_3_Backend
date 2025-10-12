@@ -5,7 +5,6 @@ const { Client, User, Reservation, Room } = require("../models");
 
 // (Opcional) si querés proteger rutas con JWT:
 const ensureAuth = (req, res, next) => {
-  // Descomentar si ya tenés JWT montado:
   // const auth = req.headers.authorization || "";
   // const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   // if (!token) return res.status(401).json({ message: "No autorizado" });
@@ -101,12 +100,13 @@ router.get(
 
 /**
  * POST /api/clients
- * Body esperado: { documento_identidad: string, telefono?: string, id_usuario?: number }
+ * Body: { nombre?, documento_identidad*, telefono?, id_usuario? }
  */
 router.post(
   "/",
   ensureAuth,
   [
+    body("nombre").optional().isString().withMessage("nombre debe ser string"),
     body("documento_identidad").trim().notEmpty().withMessage("documento_identidad es requerido"),
     body("telefono").optional().isString().withMessage("telefono debe ser string"),
     body("id_usuario").optional().isInt().withMessage("id_usuario debe ser numérico"),
@@ -114,13 +114,12 @@ router.post(
   handleValidation,
   async (req, res) => {
     try {
-      const { documento_identidad, telefono, id_usuario } = req.body;
+      const { nombre, documento_identidad, telefono, id_usuario } = req.body;
 
-      // (Opcional) chequear duplicados por documento
       const exists = await Client.findOne({ where: { documento_identidad } });
       if (exists) return res.status(409).json({ message: "El documento ya existe" });
 
-      const newClient = await Client.create({ documento_identidad, telefono, id_usuario });
+      const newClient = await Client.create({ nombre, documento_identidad, telefono, id_usuario });
       res.status(201).json(newClient);
     } catch (error) {
       console.error("Error creating client:", error);
@@ -137,6 +136,7 @@ router.put(
   ensureAuth,
   [
     param("id").isInt().withMessage("id debe ser numérico"),
+    body("nombre").optional().isString().withMessage("nombre debe ser string"),
     body("documento_identidad").optional().trim().notEmpty().withMessage("documento_identidad no puede ser vacío"),
     body("telefono").optional().isString().withMessage("telefono debe ser string"),
     body("id_usuario").optional().isInt().withMessage("id_usuario debe ser numérico"),
@@ -148,13 +148,13 @@ router.put(
       const client = await Client.findByPk(id);
       if (!client) return res.status(404).json({ message: "Cliente no encontrado" });
 
-      // Evitar duplicados si cambiaron el documento
       if (req.body.documento_identidad && req.body.documento_identidad !== client.documento_identidad) {
         const dup = await Client.findOne({ where: { documento_identidad: req.body.documento_identidad } });
         if (dup) return res.status(409).json({ message: "El documento ya existe" });
       }
 
-      await client.update(req.body);
+      const { nombre, documento_identidad, telefono, id_usuario } = req.body;
+      await client.update({ nombre, documento_identidad, telefono, id_usuario });
       res.json(client);
     } catch (error) {
       console.error("Error updating client:", error);
@@ -177,7 +177,6 @@ router.delete(
       const client = await Client.findByPk(id, { include: [{ model: Reservation, as: "reservas" }] });
       if (!client) return res.status(404).json({ message: "Cliente no encontrado" });
 
-      // (Opcional) evitar borrar si tiene reservas activas
       if (client.reservas && client.reservas.length > 0) {
         return res.status(409).json({ message: "No se puede borrar: el cliente tiene reservas asociadas" });
       }

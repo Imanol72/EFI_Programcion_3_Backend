@@ -1,47 +1,33 @@
-// models/user.js
-const { Model, DataTypes } = require('sequelize');
 
-module.exports = (sequelize) => {
-  class User extends Model {
-    static associate(models) {
-      // users (1) --- (N) clients
-      User.hasMany(models.Client, { foreignKey: 'id_usuario', as: 'clientes' });
-      
-      // users (1) --- (N) reservations
-      User.hasMany(models.Reservation, { foreignKey: 'id_usuario', as: 'reservas' });
-    }
-  }
-
-  User.init(
+module.exports = (sequelize, DataTypes) => {
+  const User = sequelize.define(
+    "User",
     {
-      nombre: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      correo: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-      },
-      contraseña: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      rol: {
-        type: DataTypes.ENUM('admin', 'empleado', 'cliente'),
-        allowNull: false,
-        defaultValue: 'cliente', // <- rol por defecto
-      },
-      is_active: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true,
-      },
+      id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+
+      // nombres de usuario (viejo y nuevo)
+      username:   { type: DataTypes.STRING, allowNull: true, field: "username" },
+      nombre:     { type: DataTypes.STRING, allowNull: true, field: "nombre" },
+
+      // correo (nuevo)
+      correo:     { type: DataTypes.STRING, allowNull: true, field: "correo", unique: true },
+
+      // CONTRASEÑAS (ambas columnas, importante!)
+      password:   { type: DataTypes.STRING, allowNull: true, field: "password" },      // vieja
+      contraseña: { type: DataTypes.STRING, allowNull: true, field: "contraseña" },    // nueva
+
+      // ROLES (ambas columnas)
+      role: { type: DataTypes.ENUM("cliente","empleado","admin"), allowNull: true, field: "role" }, // viejo
+      rol:  { type: DataTypes.ENUM("cliente","empleado","admin"), allowNull: true, field: "rol"  }, // nuevo
+
+      is_active:  { type: DataTypes.BOOLEAN, allowNull: true, field: "is_active", defaultValue: 1 },
     },
     {
-      sequelize,
-      modelName: 'User',
-      tableName: 'users',
-      timestamps: true, // crea createdAt y updatedAt automáticamente
+      tableName: "users",
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+      underscored: true,
     }
   );
 
