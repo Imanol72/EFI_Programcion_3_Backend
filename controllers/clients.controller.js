@@ -1,31 +1,61 @@
-// controllers/clients.controller.js
-const { User, Client, Reservation, Room } = require("../models");
+// backend/controllers/rooms.controller.js
+const { Rooms } = require("../models");
 
-async function getClients(req, res, next) {
+// GET todas las habitaciones
+const getAllRooms = async (req, res) => {
   try {
-    const clients = await Client.findAll({
-      attributes: ["id", "documento_identidad", "telefono", "created_at", "updated_at", "id_usuario"],
-      include: [
-        { model: User, as: "usuario", attributes: ["id", "username"] },
-        {
-          model: Reservation,
-          as: "reservas",
-          attributes: ["id", "fecha_inicio", "fecha_fin", "estado", "id_habitacion", "id_usuario", "created_at", "updated_at"],
-          include: [
-            {
-              model: Room,
-              as: "habitacion",
-              attributes: ["id", "numero_habitacion", "tipo", "precio_noche", "disponible", "created_at", "updated_at"],
-            },
-          ],
-        },
-      ],
-    });
-
-    res.json(clients);
+    const rooms = await Rooms.findAll();
+    res.json(rooms);
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: "Error al obtener habitaciones", error: err.message });
   }
-}
+};
 
-module.exports = { getClients };
+// GET una habitación por ID
+const getRoomById = async (req, res) => {
+  try {
+    const room = await Rooms.findByPk(req.params.id);
+    if (!room) return res.status(404).json({ message: "Habitación no encontrada" });
+    res.json(room);
+  } catch (err) {
+    res.status(500).json({ message: "Error al obtener habitación", error: err.message });
+  }
+};
+
+// POST crear una habitación
+const createRoom = async (req, res) => {
+  try {
+    const room = await Rooms.create(req.body);
+    res.status(201).json(room);
+  } catch (err) {
+    res.status(500).json({ message: "Error al crear habitación", error: err.message });
+  }
+};
+
+// PUT actualizar habitación
+const updateRoom = async (req, res) => {
+  try {
+    const room = await Rooms.findByPk(req.params.id);
+    if (!room) return res.status(404).json({ message: "Habitación no encontrada" });
+
+    await room.update(req.body);
+    res.json(room);
+  } catch (err) {
+    res.status(500).json({ message: "Error al actualizar habitación", error: err.message });
+  }
+};
+
+// DELETE eliminar habitación
+const deleteRoom = async (req, res) => {
+  try {
+    const room = await Rooms.findByPk(req.params.id);
+    if (!room) return res.status(404).json({ message: "Habitación no encontrada" });
+
+    await room.destroy();
+    res.json({ message: "Habitación eliminada" });
+  } catch (err) {
+    res.status(500).json({ message: "Error al eliminar habitación", error: err.message });
+  }
+};
+
+module.exports = { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom };

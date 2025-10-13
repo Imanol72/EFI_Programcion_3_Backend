@@ -6,22 +6,45 @@ module.exports = (sequelize, DataTypes) => {
     {
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
 
-      // columnas reales (DESCRIBE rooms;)
+      // varchar(16) UNIQUE (puede ser null)
       numero_habitacion: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
+        type: DataTypes.STRING(16),
+        allowNull: true,
         unique: true,
       },
+
       tipo: {
-        type: DataTypes.STRING, // varchar(255)
+        type: DataTypes.STRING(255),
         allowNull: false,
       },
-      // en tu DB es DECIMAL(10,0) (sin decimales)
+
+      capacidad: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+      },
+
       precio_noche: {
         type: DataTypes.DECIMAL(10, 0),
         allowNull: false,
       },
-      // tinyint(1) -> boolean
+
+      descripcion: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+
+      image_url: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+
+      amenities: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: [],
+      },
+
       disponible: {
         type: DataTypes.BOOLEAN,
         allowNull: true,
@@ -38,8 +61,12 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Room.associate = (models) => {
-    // rooms (1) --- (N) reservations
-    Room.hasMany(models.Reservation, { foreignKey: "id_habitacion", as: "reservas" });
+    if (models.Reservation) {
+      Room.hasMany(models.Reservation, {
+        foreignKey: "id_habitacion",
+        as: "reservas",
+      });
+    }
   };
 
   return Room;

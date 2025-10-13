@@ -1,14 +1,12 @@
-// middlewares/roles.js
-module.exports = (roles = []) => {
-  const allowed = Array.isArray(roles) ? roles : [roles];
+// backend/middlewares/roleMiddleware.js
+module.exports = function roleMiddleware(allowed = []) {
   return (req, res, next) => {
-    // Si no hay user o no hay rol, bloquea:
-    if (!req.user || !req.user.rol) {
-      return res.status(403).json({ message: "Forbidden: missing role" });
+    if (!req.user?.role) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
-    if (!allowed.includes(req.user.rol)) {
-      return res.status(403).json({ message: "Forbidden: insufficient role" });
+    if (!allowed.length || allowed.includes(req.user.role)) {
+      return next();
     }
-    next();
+    return res.status(403).json({ message: "Forbidden" });
   };
 };

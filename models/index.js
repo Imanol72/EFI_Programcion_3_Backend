@@ -1,42 +1,37 @@
-// models/index.js
 "use strict";
 
 const fs = require("fs");
 const path = require("path");
-const Sequelize = require("sequelize");
-
-// ❌ No vuelvas a cargar dotenv acá. Ya lo carga server.js.
-// require('dotenv').config();
-
+const { Sequelize, DataTypes } = require("sequelize");
 const basename = path.basename(__filename);
+
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST || "localhost",
+    port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+    dialect: "mysql",
+    logging: false,
+    define: {
+      underscored: true,
+      timestamps: true,
+    },
+  }
+);
+
 const db = {};
 
-// Tomá las variables correctas del .env
-const {
-  DB_HOST,
-  DB_USER,
-  DB_PASSWORD,
-  DB_NAME,
-  DB_PORT
-} = process.env;
-
-// (opcional) Log mínimo para verificar (sin password)
-console.log('[Sequelize] host:', DB_HOST, 'user:', DB_USER);
-
-const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-  host: DB_HOST,
-  port: DB_PORT ? Number(DB_PORT) : 3306,
-  dialect: "mysql",
-  logging: false,
-});
-
+// Carga automática de modelos (todos los .js menos index.js)
 fs.readdirSync(__dirname)
   .filter((file) => file.indexOf(".") !== 0 && file !== basename && file.slice(-3) === ".js")
   .forEach((file) => {
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
+    const model = require(path.join(__dirname, file))(sequelize, DataTypes);
     db[model.name] = model;
   });
 
+// Asociaciones
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) db[modelName].associate(db);
 });

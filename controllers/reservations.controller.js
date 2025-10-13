@@ -1,15 +1,14 @@
-// backend/controllers/reservations.controller.js
-const { Reservations, Clients, Rooms, Users } = require("../models");
+const { Reservation, Client, Room, User } = require("../models");
 
-// GET todas las reservas (solo admin/empleado)
-const getAllReservations = async (req, res) => {
+// GET todas (admin / empleado)
+const getAllReservations = async (_req, res) => {
   try {
-    const reservations = await Reservations.findAll({
+    const reservations = await Reservation.findAll({
       include: [
-        { model: Clients, as: "cliente" },
-        { model: Rooms, as: "habitacion" },
-        { model: Users, as: "usuario" }
-      ]
+        { model: Client, as: "cliente" },
+        { model: Room, as: "habitacion" },
+        { model: User, as: "usuario" },
+      ],
     });
     res.json(reservations);
   } catch (err) {
@@ -17,12 +16,12 @@ const getAllReservations = async (req, res) => {
   }
 };
 
-// GET reservas del usuario logueado (cliente)
+// GET mis reservas (cliente)
 const getMyReservations = async (req, res) => {
   try {
-    const reservations = await Reservations.findAll({
+    const reservations = await Reservation.findAll({
       where: { id_usuario: req.user.id },
-      include: [{ model: Rooms, as: "habitacion" }]
+      include: [{ model: Room, as: "habitacion" }],
     });
     res.json(reservations);
   } catch (err) {
@@ -30,17 +29,19 @@ const getMyReservations = async (req, res) => {
   }
 };
 
-// POST crear reserva
+// POST crear
 const createReservation = async (req, res) => {
   try {
-    const { id_habitacion, fecha_inicio, fecha_fin } = req.body;
+    const { id_habitacion, fecha_inicio, fecha_fin, id_cliente, guests, price_per_night, nights, total } = req.body;
 
-    const reservation = await Reservations.create({
+    const reservation = await Reservation.create({
       id_usuario: req.user.id,
       id_habitacion,
+      id_cliente: id_cliente ?? null,
       fecha_inicio,
       fecha_fin,
-      estado: "pendiente"
+      estado: "pendiente",
+      guests, price_per_night, nights, total,
     });
 
     res.status(201).json(reservation);
@@ -49,10 +50,10 @@ const createReservation = async (req, res) => {
   }
 };
 
-// PUT actualizar reserva (solo admin/empleado)
+// PUT actualizar (admin / empleado)
 const updateReservation = async (req, res) => {
   try {
-    const reservation = await Reservations.findByPk(req.params.id);
+    const reservation = await Reservation.findByPk(req.params.id);
     if (!reservation) return res.status(404).json({ message: "Reserva no encontrada" });
 
     await reservation.update(req.body);
@@ -62,13 +63,13 @@ const updateReservation = async (req, res) => {
   }
 };
 
-// DELETE cancelar reserva (cliente solo las suyas / admin todas)
+// DELETE cancelar (cliente: sólo las suyas / admin: cualquiera)
 const deleteReservation = async (req, res) => {
   try {
-    const reservation = await Reservations.findByPk(req.params.id);
+    const reservation = await Reservation.findByPk(req.params.id);
     if (!reservation) return res.status(404).json({ message: "Reserva no encontrada" });
 
-    if (req.user.rol === "cliente" && reservation.id_usuario !== req.user.id) {
+    if ((req.user.role || req.user.rol) === "cliente" && reservation.id_usuario !== req.user.id) {
       return res.status(403).json({ message: "No puedes cancelar reservas de otros usuarios" });
     }
 
@@ -79,4 +80,10 @@ const deleteReservation = async (req, res) => {
   }
 };
 
-module.exports = { getAllReservations, getMyReservations, createReservation, updateReservation, deleteReservation };
+module.exports = {
+  getAllReservations,
+  getMyReservations,
+  createReservation,
+  updateReservation,
+  deleteReservation,
+};
