@@ -1,15 +1,27 @@
-// backend/routes/rooms.routes.js
+// backend/routes/reservations.routes.js
 const express = require("express");
-const { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom } = require("../controllers/rooms.controller");
+const {
+  listReservations,
+  getReservation,
+  createReservation,
+  updateReservation,
+  deleteReservation,
+} = require("../controllers/reservations.controller");
+
 const authMiddleware = require("../middlewares/authMiddleware");
 const roleMiddleware = require("../middlewares/roleMiddleware");
 
 const router = express.Router();
 
-router.get("/", authMiddleware, getAllRooms);
-router.get("/:id", authMiddleware, getRoomById);
-router.post("/", authMiddleware, roleMiddleware(["admin", "empleado"]), createRoom);
-router.put("/:id", authMiddleware, roleMiddleware(["admin", "empleado"]), updateRoom);
-router.delete("/:id", authMiddleware, roleMiddleware(["admin"]), deleteRoom);
+// todas requieren auth
+router.get("/",    authMiddleware, listReservations);
+router.get("/:id", authMiddleware, getReservation);
+
+// crear/editar: admin o empleado
+router.post("/",       authMiddleware, roleMiddleware(["admin", "empleado"]), createReservation);
+router.put("/:id",     authMiddleware, roleMiddleware(["admin", "empleado"]), updateReservation);
+
+// eliminar: solo admin
+router.delete("/:id",  authMiddleware, roleMiddleware(["admin"]), deleteReservation);
 
 module.exports = router;

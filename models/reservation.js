@@ -5,12 +5,19 @@ module.exports = (sequelize, DataTypes) => {
     "Reservation",
     {
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-      fecha_inicio: { type: DataTypes.DATE, allowNull: false },
-      fecha_fin: { type: DataTypes.DATE, allowNull: false },
-      estado: { type: DataTypes.STRING, allowNull: true }, // default en DB: 'pendiente'
-      id_cliente: { type: DataTypes.INTEGER, allowNull: true },
+
+      // columnas reales de tu tabla
+      fecha_inicio: { type: DataTypes.DATE, allowNull: false }, // DATETIME
+      fecha_fin:    { type: DataTypes.DATE, allowNull: false }, // DATETIME
+      estado:       { type: DataTypes.STRING(255), allowNull: true },
+
+      id_cliente:    { type: DataTypes.INTEGER, allowNull: true },
       id_habitacion: { type: DataTypes.INTEGER, allowNull: true },
-      id_usuario: { type: DataTypes.INTEGER, allowNull: true },
+      id_usuario:    { type: DataTypes.INTEGER, allowNull: true }, // por si lo usás
+
+      // timestamps mapeados como ya tenés
+      created_at: { type: DataTypes.DATE, allowNull: false },
+      updated_at: { type: DataTypes.DATE, allowNull: false },
     },
     {
       tableName: "reservations",
@@ -22,12 +29,8 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Reservation.associate = (models) => {
-    // reservations (N) --- (1) clients
-    Reservation.belongsTo(models.Client, { foreignKey: "id_cliente", as: "cliente" });
-    // reservations (N) --- (1) users
-    Reservation.belongsTo(models.User, { foreignKey: "id_usuario", as: "usuario" });
-    // reservations (N) --- (1) rooms
-    Reservation.belongsTo(models.Room, { foreignKey: "id_habitacion", as: "habitacion" });
+    Reservation.belongsTo(models.Room,   { foreignKey: "id_habitacion", as: "room"   });
+    Reservation.belongsTo(models.Client, { foreignKey: "id_cliente",    as: "client" });
   };
 
   return Reservation;

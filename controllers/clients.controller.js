@@ -1,61 +1,96 @@
-// backend/controllers/rooms.controller.js
-const { Rooms } = require("../models");
+// backend/controllers/clients.controller.js
 
-// GET todas las habitaciones
-const getAllRooms = async (req, res) => {
+// Lista todos los clientes con sus reservas y la habitación de cada reserva
+const listClients = async (req, res, next) => {
   try {
-    const rooms = await Rooms.findAll();
-    res.json(rooms);
+    const { Client, Reservation, Room } = req.app.get("models");
+
+    const items = await Client.findAll({
+      include: [
+        {
+          model: Reservation,
+          as: "reservas",
+          include: [
+            { model: Room, as: "room" }, // 👈 alias correcto (NO "habitacion")
+          ],
+        },
+      ],
+      order: [["id", "ASC"]],
+    });
+
+    res.json(items);
   } catch (err) {
-    res.status(500).json({ message: "Error al obtener habitaciones", error: err.message });
+    console.error("Error fetching clients:", err);
+    next(err);
   }
 };
 
-// GET una habitación por ID
-const getRoomById = async (req, res) => {
+// Trae un cliente por id
+const getClient = async (req, res, next) => {
   try {
-    const room = await Rooms.findByPk(req.params.id);
-    if (!room) return res.status(404).json({ message: "Habitación no encontrada" });
-    res.json(room);
+    const { Client, Reservation, Room } = req.app.get("models");
+
+    const item = await Client.findByPk(req.params.id, {
+      include: [
+        {
+          model: Reservation,
+          as: "reservas",
+          include: [
+            { model: Room, as: "room" }, // 👈 alias correcto
+          ],
+        },
+      ],
+    });
+
+    if (!item) return res.status(404).json({ message: "Cliente no encontrado" });
+    res.json(item);
   } catch (err) {
-    res.status(500).json({ message: "Error al obtener habitación", error: err.message });
+    console.error("Error fetching client:", err);
+    next(err);
   }
 };
 
-// POST crear una habitación
-const createRoom = async (req, res) => {
+// Crea
+const createClient = async (req, res, next) => {
   try {
-    const room = await Rooms.create(req.body);
-    res.status(201).json(room);
+    const { Client } = req.app.get("models");
+    const created = await Client.create(req.body);
+    res.status(201).json(created);
   } catch (err) {
-    res.status(500).json({ message: "Error al crear habitación", error: err.message });
+    next(err);
   }
 };
 
-// PUT actualizar habitación
-const updateRoom = async (req, res) => {
+// Actualiza
+const updateClient = async (req, res, next) => {
   try {
-    const room = await Rooms.findByPk(req.params.id);
-    if (!room) return res.status(404).json({ message: "Habitación no encontrada" });
-
-    await room.update(req.body);
-    res.json(room);
+    const { Client } = req.app.get("models");
+    const item = await Client.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ message: "Cliente no encontrado" });
+    await item.update(req.body);
+    res.json(item);
   } catch (err) {
-    res.status(500).json({ message: "Error al actualizar habitación", error: err.message });
+    next(err);
   }
 };
 
-// DELETE eliminar habitación
-const deleteRoom = async (req, res) => {
+// Borra
+const deleteClient = async (req, res, next) => {
   try {
-    const room = await Rooms.findByPk(req.params.id);
-    if (!room) return res.status(404).json({ message: "Habitación no encontrada" });
-
-    await room.destroy();
-    res.json({ message: "Habitación eliminada" });
+    const { Client } = req.app.get("models");
+    const item = await Client.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ message: "Cliente no encontrado" });
+    await item.destroy();
+    res.json({ message: "Cliente eliminado" });
   } catch (err) {
-    res.status(500).json({ message: "Error al eliminar habitación", error: err.message });
+    next(err);
   }
 };
 
-module.exports = { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom };
+module.exports = {
+  listClients,
+  getClient,
+  createClient,
+  updateClient,
+  deleteClient,
+};
