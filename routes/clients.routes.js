@@ -50,7 +50,7 @@ router.get(
             as: "reservas",
             attributes: ["id", "fecha_inicio", "fecha_fin", "estado", "id_habitacion", "id_usuario", "created_at", "updated_at"],
             include: [
-              { model: Room, as: "habitacion", attributes: ["id", "numero_habitacion", "tipo", "precio_noche", "disponible"] },
+              { model: Room, as: "room", attributes: ["id", "numero_habitacion", "tipo", "precio_noche", "disponible"] },
             ],
           },
         ],
